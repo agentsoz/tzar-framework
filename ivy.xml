@@ -35,6 +35,7 @@
         <dependency org="org.xeustechnologies" name="jcl-core" rev="2.5" conf="tzar"/>
         <dependency org="org.yaml" name="snakeyaml" rev="1.10" conf="tzar"/>
         <dependency org="postgresql" name="postgresql" rev="9.1-901.jdbc4"/>
+        <dependency org="org.eclipse.jgit" name="org.eclipse.jgit" rev="4.9.0.201710071750-r"/>
     </dependencies>
 </ivy-module>
 
