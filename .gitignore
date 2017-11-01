@@ -4,3 +4,5 @@ Tzar.iml
 Tzar.iws
 Tzar.ipr
 out
+/build/
+/build.test/
