@@ -4,7 +4,6 @@
 	<classpathentry kind="src" path="java"/>
 	<classpathentry kind="src" path="javatest"/>
 	<classpathentry kind="lib" path="example-projects/example-java/lib/tzar-api.jar"/>
-	<classpathentry kind="lib" path="out/external-libs.jar"/>
 	<classpathentry kind="lib" path="out/tzar.jar"/>
 	<classpathentry kind="con" path="org.eclipse.jdt.launching.JRE_CONTAINER"/>
 	<classpathentry kind="con" path="org.eclipse.jdt.junit.JUNIT_CONTAINER/3"/>
