@@ -62,6 +62,7 @@
             <zipfileset src="${out.dir}/external-libs.jar">
                 <exclude name="META-INF/**.SF"/>
                 <exclude name="META-INF/**.DSA"/>
+                <exclude name="META-INF/**.RSA"/>
             </zipfileset>
         </jar>
     </target>
