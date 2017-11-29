@@ -12,6 +12,7 @@ import org.xeustechnologies.jcl.proxy.ProxyProviderFactory;
 
 import java.io.File;
 import java.io.IOException;
+import java.util.logging.Level;
 import java.util.logging.Logger;
 
 /**
@@ -37,6 +38,7 @@ public class JavaRunner implements Runner {
       throw new TzarException("Couldn't canonicalise pathname. Aborting run.", e);
     }
 
+    logger.log(Level.FINE, "Attempting to execute java class " + flags.className + "using jar path " + jarPath.getAbsolutePath());
     Runner runner = getRunner(jarPath, flags.className);
     return runner.runModel(model, outputPath, runId, runnerFlags, parameters, logger, stopRun);
   }
