@@ -52,7 +52,7 @@ public class GitRepository extends UrlRepository {
       }
     }
     LOG.info("Done. Model at " + modelPath + " is a clean working copy now");
-    mpath = createModelPath(name, modelPath, sourceUri);
+    mpath = modelPath; // = createModelPath(name, modelPath, sourceUri);
     return mpath;
   }
 
