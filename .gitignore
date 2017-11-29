@@ -1,8 +1,9 @@
 **/*.class
 Tzar.ids
-Tzar.iml
+*.iml
 Tzar.iws
 Tzar.ipr
+.idea/
 out
 /build/
 /build.test/
