@@ -26,22 +26,12 @@ public class GitRepository extends UrlRepository {
 
   @Override
   public File retrieveModel(String revision, String name, File modelPath) throws TzarException {
+    final String branchName = "rev-" + revision;
     if (git == null) {
       throw new TzarException("No git repository at: " + sourceUri);
     }
     File mpath = null;
-    if (modelPath.exists()) {
-      try {
-        LOG.info("Model exists at " + modelPath + " so will attempt to git clean it now");
-        Git.open(modelPath)
-                .clean()
-                .setCleanDirectories(true) // also clean directories, not just files
-                .setIgnore(false) // clean also ignored files
-                .call();
-      } catch (Exception e) {
-        throw new TzarException("Tried git cleaning "+modelPath+" but failed: " + e.getMessage());
-      }
-    } else {
+    if (!modelPath.exists()) {
       try {
         LOG.info("Attempting to clone Git repository to " + modelPath + " now");
         Git.cloneRepository()
@@ -53,6 +43,51 @@ public class GitRepository extends UrlRepository {
         throw new TzarException("Could not clone Git repository: " + e.getMessage());
       }
     }
+    try {
+      LOG.info("Moving the repository to master/HEAD");
+      Git.open(modelPath)
+              .checkout()
+              .setName("master")
+              .setStartPoint("HEAD") // checkout the revision in the branch
+              .call();
+    } catch (Exception e) {
+      throw new TzarException("Could not checkout git repository master/HEAD: " + e.getMessage());
+    }
+
+    try {
+      LOG.info("Force delete branch " + branchName);
+      Git.open(modelPath)
+              .branchDelete()
+              .setBranchNames(branchName)
+              .setForce(true)
+              .call();
+
+    } catch (Exception e) {
+      throw new TzarException("Could not force delete git branch "+ branchName + ": " + e.getMessage());
+    }
+
+    try {
+      LOG.info("Checking out repository version " + revision + " on new branch " + branchName);
+      Git.open(modelPath)
+              .checkout()
+              .setCreateBranch(true).setName(branchName) // create a branch with the same name as revision
+              .setStartPoint(revision) // checkout the revision in the branch
+              .call();
+    } catch (Exception e) {
+      throw new TzarException("Could not checkout git version " + revision + " on branch " + branchName + ": " + e.getMessage());
+    }
+
+    try {
+      LOG.info("Cleaning repository version " + revision + " on new branch " + branchName);
+      Git.open(modelPath)
+              .clean()
+              .setCleanDirectories(true) // also clean directories, not just files
+              .setIgnore(false) // clean also ignored files
+              .call();
+    } catch (Exception e) {
+      throw new TzarException("Could not clean git version " + revision + " on branch " + branchName + ": " + e.getMessage());
+    }
+
     LOG.info("Done. Model at " + modelPath + " is a clean working copy now");
     mpath = modelPath; // = createModelPath(name, modelPath, sourceUri);
     return mpath;
