@@ -1,26 +1,32 @@
 package au.edu.rmit.tzar.repository;
 
-import java.io.File;
-import java.io.IOException;
-import java.net.URI;
-import java.util.logging.Logger;
-
+import au.edu.rmit.tzar.api.TzarException;
+import com.google.common.hash.Hashing;
 import org.eclipse.jgit.api.Git;
 import org.eclipse.jgit.lib.ObjectId;
 import org.eclipse.jgit.lib.Repository;
-import au.edu.rmit.tzar.api.TzarException;
+
+import java.io.File;
+import java.net.URI;
+import java.nio.charset.StandardCharsets;
+import java.nio.file.Path;
+import java.nio.file.Paths;
+import java.util.logging.Logger;
 
 public class GitRepository extends UrlRepository {
   private static final Logger LOG = Logger.getLogger(GitRepository.class.getName());
 
   private Git git;
+
+  private Path tmpdir;
   
-  
-  public GitRepository(URI sourceUri) {
+  GitRepository(URI sourceUri) {
     super(sourceUri);
     try {
-      git = Git.open( new File(sourceUri ) );
-    } catch (IOException e) {
+        git = clone(sourceUri.toString());
+    } catch(Exception e) {
+      LOG.severe("Could not clone repository " + sourceUri.toString() + ": " + e.getMessage());
+      e.printStackTrace();
     }
   }
 
@@ -28,20 +34,20 @@ public class GitRepository extends UrlRepository {
   public File retrieveModel(String revision, String name, File modelPath) throws TzarException {
     final String branchName = "rev-" + revision;
     if (git == null) {
-      throw new TzarException("No git repository at: " + sourceUri);
+      throw new TzarException("Could not clone repository " + sourceUri.toString());
     }
-    File mpath = null;
-    if (!modelPath.exists()) {
-      try {
-        LOG.info("Attempting to clone Git repository to " + modelPath + " now");
-        Git.cloneRepository()
-        .setURI(sourceUri.toString())
-        .setDirectory(modelPath)
-        .call();
-        mpath = createModelPath(name, modelPath, sourceUri);
-      } catch (Exception e) {
-        throw new TzarException("Could not clone Git repository: " + e.getMessage());
-      }
+    File mpath;
+    if (modelPath.exists()) {
+      deleteDir(modelPath);
+    }
+    try {
+      LOG.info("Attempting to locally clone Git repository to " + modelPath + " now from "+ tmpdir);
+      Git.cloneRepository()
+              .setURI(tmpdir.toString())
+              .setDirectory(modelPath)
+              .call();
+    } catch (Exception e) {
+      throw new TzarException("Could not clone Git repository: " + e.getMessage());
     }
     try {
       LOG.info("Moving the repository to master/HEAD");
@@ -97,18 +103,18 @@ public class GitRepository extends UrlRepository {
   public File retrieveProjectParams(String projectParamFilename, String revision, File destPath)
       throws TzarException {
     if (git == null) {
-      throw new TzarException("No git repository at: " + sourceUri);
+      throw new TzarException("Could not clone repository " + sourceUri.toString());
     }
-    return new File(new File(sourceUri ), projectParamFilename);
+    return new File(tmpdir.toString(), projectParamFilename);
   }
 
   @Override
   public String getHeadRevision() throws TzarException {
     if (git == null) {
-      throw new TzarException("No git repository at: " + sourceUri);
+      throw new TzarException("Could not clone repository " + sourceUri.toString());
     }
     Repository repository = git.getRepository();
-    String rev = null;
+    String rev;
     try {
       ObjectId head = repository.resolve("HEAD");
       rev = head.name();
@@ -118,4 +124,35 @@ public class GitRepository extends UrlRepository {
     return rev;
   }
 
+  private Git clone(String uri) throws TzarException {
+    Git repo = null;
+    if (tmpdir == null) {
+        tmpdir = Paths.get(System.getProperty("java.io.tmpdir"), Hashing.crc32().hashString(sourceUri.toString(), StandardCharsets.UTF_8).toString());
+        try {
+          if (!tmpdir.toFile().exists()) {
+            LOG.info("Attempting to clone Git repository " + uri + " to " + tmpdir + " now");
+            repo = Git.cloneRepository()
+                    .setURI(uri)
+                    .setDirectory(tmpdir.toFile())
+                    .call();
+          } else {
+            LOG.info("Git repository clone already exists in " + tmpdir + " so will use it");
+            repo = Git.open(tmpdir.toFile());
+          }
+        } catch (Exception e) {
+          throw new TzarException("Could not clone Git repository: " + e.getMessage());
+        }
+    }
+    return repo;
+  }
+
+  private void deleteDir(File file) {
+    File[] contents = file.listFiles();
+    if (contents != null) {
+      for (File f : contents) {
+        deleteDir(f);
+      }
+    }
+    file.delete();
+  }
 }
