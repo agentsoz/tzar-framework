@@ -35,7 +35,7 @@ public class GitRepository extends UrlRepository {
       try {
         LOG.info("Attempting to clone Git repository to " + modelPath + " now");
         Git.cloneRepository()
-        .setURI(sourceUri + "/.git")
+        .setURI(sourceUri.toString())
         .setDirectory(modelPath)
         .call();
         mpath = createModelPath(name, modelPath, sourceUri);
