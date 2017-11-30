@@ -34,8 +34,10 @@ public class GitRepository extends UrlRepository {
       try {
         LOG.info("Model exists at " + modelPath + " so will attempt to git clean it now");
         Git.open(modelPath)
-            .clean()
-            .call();
+                .clean()
+                .setCleanDirectories(true) // also clean directories, not just files
+                .setIgnore(false) // clean also ignored files
+                .call();
       } catch (Exception e) {
         throw new TzarException("Tried git cleaning "+modelPath+" but failed: " + e.getMessage());
       }
