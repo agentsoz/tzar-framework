@@ -149,7 +149,10 @@ public class GitRepository extends UrlRepository {
                     .setDirectory(tmpdir.toFile())
                     .call();
           } else {
-            LOG.info("Git repository clone already exists in " + tmpdir + " so will use it");
+            LOG.info("Git repository clone already exists in " + tmpdir + " so will pull changes to it now");
+            Git.open(tmpdir.toFile())
+                    .pull()
+                    .call();
             repo = Git.open(tmpdir.toFile());
           }
         } catch (Exception e) {
