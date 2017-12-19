@@ -141,23 +141,36 @@ public class GitRepository extends UrlRepository {
     Git repo = null;
     if (tmpdir == null) {
         tmpdir = Paths.get(System.getProperty("java.io.tmpdir"), Hashing.crc32().hashString(sourceUri.toString(), StandardCharsets.UTF_8).toString());
+      // If the clone directory exists then check that it is valid, else remove it
+      if (tmpdir.toFile().exists()) {
+        LOG.info("Directory " + tmpdir + " exists so will check if it has a valid clone");
         try {
-          if (!tmpdir.toFile().exists()) {
-            LOG.info("Attempting to clone Git repository " + uri + " to " + tmpdir + " now");
-            repo = Git.cloneRepository()
-                    .setURI(uri)
-                    .setDirectory(tmpdir.toFile())
-                    .call();
-          } else {
-            LOG.info("Git repository clone already exists in " + tmpdir + " so will pull changes to it now");
-            Git.open(tmpdir.toFile())
-                    .pull()
-                    .call();
-            repo = Git.open(tmpdir.toFile());
-          }
+          Repository r = Git.open(tmpdir.toFile()).getRepository();
+          String url = r.getConfig().getString( "remote", "origin", "url" );
+          LOG.info("Found clone of remote " + url + " in directory " + tmpdir);
         } catch (Exception e) {
-          throw new TzarException("Could not clone Git repository: " + e.getMessage());
+          LOG.warning("Directory " + tmpdir + " does not seem to be a valid clone so will delete it and try cloning");
+          deleteDir(tmpdir.toFile());
         }
+      }
+      // We should either have a valid clone now, or need to clone afresh
+      try {
+        if (!tmpdir.toFile().exists()) {
+          LOG.info("Attempting to clone Git repository " + uri + " to " + tmpdir + " now");
+          repo = Git.cloneRepository()
+                  .setURI(uri)
+                  .setDirectory(tmpdir.toFile())
+                  .call();
+        } else {
+          LOG.info("Git repository clone exists in " + tmpdir + " so will pull any new changes to it now");
+          Git.open(tmpdir.toFile())
+                  .pull()
+                  .call();
+          repo = Git.open(tmpdir.toFile());
+        }
+      } catch (Exception e) {
+        throw new TzarException("Could not clone Git repository: " + e.getMessage());
+      }
     }
     return repo;
   }
